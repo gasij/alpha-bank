@@ -54,18 +54,32 @@ public class OllamaProvider : BaseLLMProvider
             var responseContent = await response.Content.ReadAsStringAsync();
             var jsonDoc = JsonDocument.Parse(responseContent);
             
+            string? result = null;
+            
             if (jsonDoc.RootElement.TryGetProperty("message", out var messageElement) &&
                 messageElement.TryGetProperty("content", out var contentElement))
             {
-                return contentElement.GetString() ?? string.Empty;
+                result = contentElement.GetString();
             }
-            
-            if (jsonDoc.RootElement.TryGetProperty("response", out var responseElement))
+            else if (jsonDoc.RootElement.TryGetProperty("response", out var responseElement))
             {
-                return responseElement.GetString() ?? string.Empty;
+                result = responseElement.GetString();
             }
 
-            return string.Empty;
+            // Валидация ответа - проверяем, что ответ не пустой и содержит осмысленный текст
+            if (string.IsNullOrWhiteSpace(result))
+            {
+                throw new Exception("Модель вернула пустой ответ. Попробуйте переформулировать вопрос или проверьте настройки модели.");
+            }
+
+            // Проверка на явно некорректные ответы (слишком короткие или содержащие только символы)
+            var trimmedResult = result.Trim();
+            if (trimmedResult.Length < 10 || trimmedResult.Count(c => char.IsLetter(c)) < 5)
+            {
+                throw new Exception("Модель вернула некорректный ответ. Попробуйте переформулировать вопрос.");
+            }
+
+            return trimmedResult;
         }
         catch (TaskCanceledException)
         {

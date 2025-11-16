@@ -44,7 +44,7 @@ public class ChatService : IChatService
             ? request.Category 
             : "general";
 
-        var systemPrompt = SystemPrompts.Prompts[selectedCategory] + "\n\nПомни: отвечай ТОЛЬКО на русском языке.";
+        var systemPrompt = SystemPrompts.Prompts[selectedCategory];
 
         // Build user message with context if provided
         var userMessage = request.Message;
